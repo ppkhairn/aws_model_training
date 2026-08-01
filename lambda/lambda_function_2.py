@@ -4,7 +4,7 @@ import datetime
 def lambda_handler(event, context):
     sagemaker = boto3.client('sagemaker')
     # Unique name for every run
-    job_name = f"cats-dogs-training-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+    job_name = f"griffin-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
     
     sagemaker.create_training_job(
         TrainingJobName=job_name,
@@ -17,13 +17,13 @@ def lambda_handler(event, context):
             'ChannelName': 'training',
             'DataSource': {'S3DataSource': {
                 'S3DataType': 'S3Prefix',
-                'S3Uri': 's3://customer-data-pushkar-khairnar-108372347/training/',
+                'S3Uri': 's3://customer-data-pushkar-khairnar-108372347/griffin_model/',
                 'S3DataDistributionType': 'FullyReplicated'
             }}
         }],
         OutputDataConfig={'S3OutputPath': 's3://customer-data-pushkar-khairnar-108372347/output/'},
         ResourceConfig={
-            'InstanceType': 'ml.m5.large', # Changed from ml.g4dn.xlarge
+            'InstanceType': 'ml.m4.xlarge', # Changed from ml.g4dn.xlarge
             'InstanceCount': 1,
             'VolumeSizeInGB': 30
         },
