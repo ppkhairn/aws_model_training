@@ -102,22 +102,47 @@ Resources:
               )
               return {"status": "Training Initiated", "job_name": job_name}
 
-  # 4. API Gateway (HTTP API) to expose Lambda publicly/securely
-  TrainingApi:
-    Type: AWS::ApiGatewayV2::Api
-    Properties:
-      Name: training-trigger-api
-      ProtocolType: HTTP
-      Target: !GetAtt TrainingLambdaFunction.Arn
+  # 4. API Gateway (HTTP API)
+    TrainingApi:
+      Type: AWS::ApiGatewayV2::Api
+      Properties:
+        Name: training-trigger-api
+        ProtocolType: HTTP
 
-  # 5. Permission for API Gateway to invoke Lambda
-  LambdaApiPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref TrainingLambdaFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TrainingApi}/*/*"
+    # 5. Integration between API Gateway and Lambda
+    ApiLambdaIntegration:
+      Type: AWS::ApiGatewayV2::Integration
+      Properties:
+        ApiId: !Ref TrainingApi
+        IntegrationType: AWS_PROXY
+        IntegrationUri: !GetAtt TrainingLambdaFunction.Arn
+        PayloadFormatVersion: '2.0'
+
+    # 6. Explicit Route for /train
+    TrainingApiRoute:
+      Type: AWS::ApiGatewayV2::Route
+      Properties:
+        ApiId: !Ref TrainingApi
+        RouteKey: 'ANY /train'
+        AuthorizationType: NONE  # Change to JWT if you want to integrate your authorizer here too
+        Target: !Sub "integrations/${ApiLambdaIntegration}"
+
+    # 7. Default Stage to auto-deploy routes
+    TrainingApiStage:
+      Type: AWS::ApiGatewayV2::Stage
+      Properties:
+        ApiId: !Ref TrainingApi
+        StageName: '$default'
+        AutoDeploy: true
+
+    # 8. Permission for API Gateway to invoke Lambda
+    LambdaApiPermission:
+      Type: AWS::Lambda::Permission
+      Properties:
+        Action: lambda:InvokeFunction
+        FunctionName: !Ref TrainingLambdaFunction
+        Principal: apigateway.amazonaws.com
+        SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TrainingApi}/*/*/train"
 
 Outputs:
   ApiEndpoint:
