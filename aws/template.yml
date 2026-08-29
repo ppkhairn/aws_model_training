@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Reusable CloudFormation template for SageMaker Training Job triggered via Lambda and API Gateway.
+
+Parameters:
+  DataS3BucketName:
+    Type: String
+    Description: Name of the S3 bucket holding training data and outputs.
+  TrainingCodeBucketName:
+    Type: String
+    Description: Name of the S3 bucket holding the source code tarball.
+
+Resources:
+  # 1. IAM Role for SageMaker Execution
+  AmazonSageMakerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sagemaker.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+        - arn:aws:iam::aws:policy/CloudWatchEventsFullAccess
+      Policies:
+        - PolicyName: SageMaker-S3-Data-Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${DataS3BucketName}"
+                  - !Sub "arn:aws:s3:::${DataS3BucketName}/*"
+                  - !Sub "arn:aws:s3:::${TrainingCodeBucketName}"
+                  - !Sub "arn:aws:s3:::${TrainingCodeBucketName}/*"
+
+  # 2. IAM Role for Lambda Function
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  # 3. Lambda Function to Trigger SageMaker Training Job
+  TrainingLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python311
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 60
+      Code:
+        ZipFile: !Sub |
+          import boto3
+          import datetime
+          def lambda_handler(event, context):
+              sagemaker = boto3.client('sagemaker')
+              job_name = f"cats-dogs-training-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+              
+              sagemaker.create_training_job(
+                  TrainingJobName=job_name,
+                  AlgorithmSpecification={
+                      'TrainingImage': '763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:2.3-gpu-py311',
+                      'TrainingInputMode': 'File'
+                  },
+                  RoleArn='${AmazonSageMakerExecutionRole.Arn}',
+                  InputDataConfig=[{
+                      'ChannelName': 'training',
+                      'DataSource': {'S3DataSource': {
+                          'S3DataType': 'S3Prefix',
+                          'S3Uri': 's3://${DataS3BucketName}/training/',
+                          'S3DataDistributionType': 'FullyReplicated'
+                      }}
+                  }],
+                  OutputDataConfig={'S3OutputPath': 's3://${DataS3BucketName}/output/'},
+                  ResourceConfig={
+                      'InstanceType': 'ml.m5.large',
+                      'InstanceCount': 1,
+                      'VolumeSizeInGB': 30
+                  },
+                  StoppingCondition={'MaxRuntimeInSeconds': 3600},
+                  HyperParameters={
+                      "sagemaker_program": "train.py",
+                      "sagemaker_submit_directory": "s3://${TrainingCodeBucketName}/code/sourcedir.tar.gz"
+                  }
+              )
+              return {"status": "Training Initiated", "job_name": job_name}
+
+  # 4. API Gateway (HTTP API) to expose Lambda publicly/securely
+  TrainingApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: training-trigger-api
+      ProtocolType: HTTP
+      Target: !GetAtt TrainingLambdaFunction.Arn
+
+  # 5. Permission for API Gateway to invoke Lambda
+  LambdaApiPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref TrainingLambdaFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TrainingApi}/*/*"
+
+Outputs:
+  ApiEndpoint:
+    Description: "HTTP API endpoint URL to trigger training"
+    Value: !GetAtt TrainingApi.ApiEndpoint
+  LambdaFunctionName:
+    Description: "Name of the training trigger Lambda function"
+    Value: !Ref TrainingLambdaFunction
+  SageMakerExecutionRoleArn:
+    Description: "ARN of the SageMaker execution role"
+    Value: !GetAtt AmazonSageMakerExecutionRole.Arn
