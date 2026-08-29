@@ -30,7 +30,7 @@ jobs:
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
           name: training-infrastructure-stack
-          template: template.yaml  # Adjust this path if your template is inside a folder (e.g., infra/template.yaml)
+          template: aws/template.yaml  # Adjust this path if your template is inside a folder (e.g., infra/template.yaml)
           capabilities: CAPABILITY_NAMED_IAM
           parameter-overrides: |
             DataS3BucketName=customer-data-pushkar-khairnar-108372347,
