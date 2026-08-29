@@ -29,7 +29,7 @@ jobs:
       - name: Deploy CloudFormation Stack
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
-          name: training-infrastructure-stack-1
+          name: training-infrastructure-stack-2
           template: aws/template.yaml  # Adjust this path if your template is inside a folder (e.g., infra/template.yaml)
           capabilities: CAPABILITY_NAMED_IAM
           parameter-overrides: |
