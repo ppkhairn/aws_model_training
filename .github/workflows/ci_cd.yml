@@ -41,7 +41,7 @@ jobs:
       - name: Deploy CloudFormation Stack
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
-          name: training-infrastructure-stack-6
+          name: training-infrastructure-stack-7
           template: aws/template_2.yaml  
           capabilities: CAPABILITY_NAMED_IAM
           parameter-overrides: |

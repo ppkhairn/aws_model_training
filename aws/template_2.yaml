@@ -91,7 +91,7 @@ Resources:
               s3_input_uri = body.get('s3_input_path', 's3://${DataS3BucketName}/images/')
               s3_output_uri = body.get('s3_output_path', 's3://${DataS3BucketName}/output/')
               
-              # Construct dynamic job name: e.g., cat_dog_classification_2026-08-31-18-00-00
+              # Construct dynamic job name
               timestamp = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
               job_name = f"{task_name}-{timestamp}"
               
@@ -139,7 +139,7 @@ Resources:
       Name: training-trigger-api
       ProtocolType: HTTP
 
-  # 5. Integration
+  # 5. Integration (Restored to the working !GetAtt pattern)
   ApiLambdaIntegration:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
@@ -172,7 +172,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !Ref TrainingLambdaFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:{$TrainingApi}/*/*/train"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TrainingApi}/*/*/train"
 
 Outputs:
   ApiEndpoint:
