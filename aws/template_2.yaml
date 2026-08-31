@@ -87,7 +87,8 @@ Resources:
                       body = {}
               
               # Extract dynamic parameters or fall back to defaults
-              task_name = body.get('task_name', 'classification')
+              raw_task_name = body.get('task_name', 'classification')
+              task_name = raw_task_name.replace('_', '-') # As sagemaker does not allow underscores in the job names
               s3_input_uri = body.get('s3_input_path', 's3://${DataS3BucketName}/images/')
               s3_output_uri = body.get('s3_output_path', 's3://${DataS3BucketName}/output/')
               
