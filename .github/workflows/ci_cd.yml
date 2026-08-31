@@ -46,5 +46,5 @@ jobs:
           capabilities: CAPABILITY_NAMED_IAM
           parameter-overrides: |
             DataS3BucketName=customer-data-pushkar-khairnar-108372347,
-            TrainingCodeBucketName=training-pk
+            TrainingCodeBucketName=training-pk,
             TrainingImageUri=763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:2.3-gpu-py311
