@@ -44,4 +44,8 @@ jobs:
           name: training-infrastructure-stack-5
           template: aws/template_2.yaml  
           capabilities: CAPABILITY_NAMED_IAM
-          parameter-overrides: DataS3BucketName=customer-data-pushkar-khairnar-108372347,TrainingCodeBucketName=training-pk,TrainingImageUri=763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:2.3-gpu-py311
+          parameter-overrides: |
+            DataS3BucketName=customer-data-pushkar-khairnar-108372347,
+            TrainingCodeBucketName=training-pk,
+            TrainingImageUri=763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:2.3-gpu-py311 
+
