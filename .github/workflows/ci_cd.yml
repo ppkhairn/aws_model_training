@@ -1,4 +1,4 @@
-name: Deploy Training Infrastructure v0.0.8
+name: Deploy Training Infrastructure v0.0.9
 
 on:
   push:
@@ -46,7 +46,7 @@ jobs:
       - name: Deploy CloudFormation Stack
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
-          name: training-infrastructure-stack-7
+          name: training-infrastructure-stack-8
           template: aws/template_2.yaml  
           capabilities: CAPABILITY_NAMED_IAM
           parameter-overrides: |
