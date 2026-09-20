@@ -1,4 +1,4 @@
-name: Deploy Training Infrastructure v0.0.7
+name: Deploy Training Infrastructure v0.0.8
 
 on:
   push:
