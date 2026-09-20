@@ -25,6 +25,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      # 2.5 Ensure S3 Bucket Exists
+      - name: Ensure S3 Bucket Exists
+        run: |
+          aws s3 mb s3://training-pk --region us-east-1 2>/dev/null || true
+
       # 3. Package and Upload Training Code to S3
       - name: Package and Upload Training Code to S3
         run: |
